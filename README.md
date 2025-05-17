@@ -6,7 +6,7 @@ This project provides an intelligent solution for university exam scheduling usi
 ## Key Features 
 
 ### Core Algorithm
-- 🧬] Multiple genetic operators (selection, crossover, mutation)
+-  Multiple genetic operators (selection, crossover, mutation)
 -  Hybrid fitness function with weighted constraints
 -  Adaptive parameter tuning
 -  Parallel evaluation for faster computation
