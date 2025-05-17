@@ -1,0 +1,781 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Evolutionary Process Simulator</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 1000px;
+            margin: 0 auto;
+            padding: 20px;
+            background-color: #f5f5f5;
+            color: #333;
+        }
+        h1, h2 {
+            color: #2c3e50;
+        }
+        .container {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 20px;
+        }
+        .controls {
+            flex: 1;
+            min-width: 300px;
+            background-color: white;
+            padding: 15px;
+            border-radius: 8px;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+        }
+        .simulation {
+            flex: 2;
+            min-width: 600px;
+            background-color: white;
+            padding: 15px;
+            border-radius: 8px;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+        }
+        canvas {
+            background-color: #f0f0f0;
+            border: 1px solid #ddd;
+            width: 100%;
+        }
+        .control-group {
+            margin-bottom: 15px;
+        }
+        label {
+            display: block;
+            margin-bottom: 5px;
+            font-weight: bold;
+        }
+        input[type="range"] {
+            width: 100%;
+        }
+        select, button {
+            width: 100%;
+            padding: 8px;
+            margin-bottom: 10px;
+        }
+        .value-display {
+            font-size: 0.9em;
+            color: #666;
+            text-align: right;
+        }
+        .stats {
+            display: flex;
+            justify-content: space-between;
+            margin-top: 10px;
+            font-size: 0.9em;
+        }
+        .info-panel {
+            margin-top: 20px;
+            padding: 10px;
+            background-color: #e8f4f8;
+            border-radius: 5px;
+            font-size: 0.9em;
+        }
+        .tabs {
+            display: flex;
+            margin-bottom: 15px;
+        }
+        .tab {
+            padding: 8px 15px;
+            background-color: #ddd;
+            cursor: pointer;
+            border-radius: 5px 5px 0 0;
+            margin-right: 5px;
+        }
+        .tab.active {
+            background-color: white;
+            font-weight: bold;
+        }
+        .tab-content {
+            display: none;
+        }
+        .tab-content.active {
+            display: block;
+        }
+    </style>
+</head>
+<body>
+    <h1>Evolutionary Process Simulator</h1>
+    <p>Explore how different parameters affect evolutionary outcomes. Adjust the settings and observe how the population changes over generations.</p>
+    
+    <div class="container">
+        <div class="controls">
+            <h2>Simulation Parameters</h2>
+            
+            <div class="tabs">
+                <div class="tab active" onclick="switchTab('basic')">Basic</div>
+                <div class="tab" onclick="switchTab('advanced')">Advanced</div>
+                <div class="tab" onclick="switchTab('selection')">Selection</div>
+            </div>
+            
+            <div id="basic" class="tab-content active">
+                <div class="control-group">
+                    <label for="populationSize">Population Size</label>
+                    <input type="range" id="populationSize" min="10" max="500" value="100">
+                    <div class="value-display"><span id="populationSizeValue">100</span> organisms</div>
+                </div>
+                
+                <div class="control-group">
+                    <label for="mutationRate">Mutation Rate</label>
+                    <input type="range" id="mutationRate" min="0" max="0.2" step="0.001" value="0.01">
+                    <div class="value-display"><span id="mutationRateValue">0.01</span> mutations per gene</div>
+                </div>
+                
+                <div class="control-group">
+                    <label for="generations">Generations to Simulate</label>
+                    <input type="range" id="generations" min="10" max="500" value="100">
+                    <div class="value-display"><span id="generationsValue">100</span> generations</div>
+                </div>
+                
+                <div class="control-group">
+                    <label for="targetColor">Target Color (Fitness Goal)</label>
+                    <input type="color" id="targetColor" value="#3399ff">
+                </div>
+            </div>
+            
+            <div id="advanced" class="tab-content">
+                <div class="control-group">
+                    <label for="geneComplexity">Gene Complexity</label>
+                    <input type="range" id="geneComplexity" min="1" max="10" value="3">
+                    <div class="value-display"><span id="geneComplexityValue">3</span> genes per organism</div>
+                </div>
+                
+                <div class="control-group">
+                    <label for="mutationEffect">Mutation Effect Size</label>
+                    <input type="range" id="mutationEffect" min="0.01" max="0.5" step="0.01" value="0.1">
+                    <div class="value-display"><span id="mutationEffectValue">0.1</span> max change per mutation</div>
+                </div>
+                
+                <div class="control-group">
+                    <label for="environmentChange">Environment Change Rate</label>
+                    <input type="range" id="environmentChange" min="0" max="0.1" step="0.001" value="0">
+                    <div class="value-display"><span id="environmentChangeValue">0</span> change per generation</div>
+                </div>
+            </div>
+            
+            <div id="selection" class="tab-content">
+                <div class="control-group">
+                    <label for="selectionType">Selection Type</label>
+                    <select id="selectionType">
+                        <option value="truncation">Truncation Selection</option>
+                        <option value="tournament">Tournament Selection</option>
+                        <option value="fitnessProportionate">Fitness Proportionate</option>
+                        <option value="rank">Rank Selection</option>
+                    </select>
+                </div>
+                
+                <div class="control-group" id="tournamentSizeGroup">
+                    <label for="tournamentSize">Tournament Size</label>
+                    <input type="range" id="tournamentSize" min="2" max="10" value="3">
+                    <div class="value-display"><span id="tournamentSizeValue">3</span> competitors</div>
+                </div>
+                
+                <div class="control-group" id="truncationThresholdGroup">
+                    <label for="truncationThreshold">Truncation Threshold</label>
+                    <input type="range" id="truncationThreshold" min="0.1" max="0.9" step="0.05" value="0.5">
+                    <div class="value-display">Top <span id="truncationThresholdValue">50</span>% selected</div>
+                </div>
+                
+                <div class="control-group">
+                    <label for="elitism">Elitism</label>
+                    <input type="range" id="elitism" min="0" max="0.2" step="0.01" value="0">
+                    <div class="value-display"><span id="elitismValue">0</span>% best preserved</div>
+                </div>
+            </div>
+            
+            <button id="startButton">Start Simulation</button>
+            <button id="pauseButton" disabled>Pause</button>
+            <button id="stepButton" disabled>Step</button>
+            <button id="resetButton">Reset</button>
+            
+            <div class="info-panel">
+                <h3>Current Generation: <span id="currentGeneration">0</span></h3>
+                <div class="stats">
+                    <div>Best Fitness: <span id="bestFitness">0</span></div>
+                    <div>Avg Fitness: <span id="avgFitness">0</span></div>
+                    <div>Diversity: <span id="diversity">0</span></div>
+                </div>
+            </div>
+        </div>
+        
+        <div class="simulation">
+            <h2>Population Visualization</h2>
+            <canvas id="populationCanvas" width="600" height="300"></canvas>
+            
+            <h2>Fitness Over Time</h2>
+            <canvas id="fitnessCanvas" width="600" height="200"></canvas>
+            
+            <h2>Gene Distribution</h2>
+            <canvas id="geneCanvas" width="600" height="200"></canvas>
+        </div>
+    </div>
+    
+    <div class="info-panel" style="margin-top: 20px;">
+        <h3>Educational Notes</h3>
+        <p><strong>Mutation Rate:</strong> Higher rates increase genetic diversity but may disrupt good solutions. Lower rates allow gradual refinement but may lead to stagnation.</p>
+        <p><strong>Selection Type:</strong> Different selection methods affect how pressure is applied. Tournament favors strong individuals, while fitness proportionate maintains more diversity.</p>
+        <p><strong>Population Size:</strong> Larger populations maintain more genetic diversity but require more computation. Smaller populations may converge quickly but risk premature convergence.</p>
+    </div>
+
+    <script>
+        // DOM elements
+        const populationCanvas = document.getElementById('populationCanvas');
+        const fitnessCanvas = document.getElementById('fitnessCanvas');
+        const geneCanvas = document.getElementById('geneCanvas');
+        const populationCtx = populationCanvas.getContext('2d');
+        const fitnessCtx = fitnessCanvas.getContext('2d');
+        const geneCtx = geneCanvas.getContext('2d');
+        
+        // Simulation parameters
+        let params = {
+            populationSize: 100,
+            mutationRate: 0.01,
+            generations: 100,
+            targetColor: [0.2, 0.6, 1.0], // #3399ff in RGB 0-1
+            geneComplexity: 3,
+            mutationEffect: 0.1,
+            environmentChange: 0,
+            selectionType: 'truncation',
+            tournamentSize: 3,
+            truncationThreshold: 0.5,
+            elitism: 0
+        };
+        
+        // Simulation state
+        let population = [];
+        let generation = 0;
+        let isRunning = false;
+        let animationId = null;
+        let fitnessHistory = [];
+        let avgFitnessHistory = [];
+        let diversityHistory = [];
+        let bestOrganismHistory = [];
+        
+        // Initialize the simulation
+        function init() {
+            // Set up event listeners for controls
+            document.getElementById('populationSize').addEventListener('input', function() {
+                params.populationSize = parseInt(this.value);
+                document.getElementById('populationSizeValue').textContent = params.populationSize;
+            });
+            
+            document.getElementById('mutationRate').addEventListener('input', function() {
+                params.mutationRate = parseFloat(this.value);
+                document.getElementById('mutationRateValue').textContent = params.mutationRate.toFixed(3);
+            });
+            
+            document.getElementById('generations').addEventListener('input', function() {
+                params.generations = parseInt(this.value);
+                document.getElementById('generationsValue').textContent = params.generations;
+            });
+            
+            document.getElementById('targetColor').addEventListener('input', function() {
+                const hex = this.value;
+                params.targetColor = [
+                    parseInt(hex.substr(1, 2), 16) / 255,
+                    parseInt(hex.substr(3, 2), 16) / 255,
+                    parseInt(hex.substr(5, 2), 16) / 255
+                ];
+            });
+            
+            document.getElementById('geneComplexity').addEventListener('input', function() {
+                params.geneComplexity = parseInt(this.value);
+                document.getElementById('geneComplexityValue').textContent = params.geneComplexity;
+            });
+            
+            document.getElementById('mutationEffect').addEventListener('input', function() {
+                params.mutationEffect = parseFloat(this.value);
+                document.getElementById('mutationEffectValue').textContent = params.mutationEffect.toFixed(2);
+            });
+            
+            document.getElementById('environmentChange').addEventListener('input', function() {
+                params.environmentChange = parseFloat(this.value);
+                document.getElementById('environmentChangeValue').textContent = params.environmentChange.toFixed(3);
+            });
+            
+            document.getElementById('selectionType').addEventListener('change', function() {
+                params.selectionType = this.value;
+                updateSelectionUI();
+            });
+            
+            document.getElementById('tournamentSize').addEventListener('input', function() {
+                params.tournamentSize = parseInt(this.value);
+                document.getElementById('tournamentSizeValue').textContent = params.tournamentSize;
+            });
+            
+            document.getElementById('truncationThreshold').addEventListener('input', function() {
+                params.truncationThreshold = parseFloat(this.value);
+                document.getElementById('truncationThresholdValue').textContent = Math.round(params.truncationThreshold * 100);
+            });
+            
+            document.getElementById('elitism').addEventListener('input', function() {
+                params.elitism = parseFloat(this.value);
+                document.getElementById('elitismValue').textContent = Math.round(params.elitism * 100);
+            });
+            
+            document.getElementById('startButton').addEventListener('click', startSimulation);
+            document.getElementById('pauseButton').addEventListener('click', pauseSimulation);
+            document.getElementById('stepButton').addEventListener('click', stepSimulation);
+            document.getElementById('resetButton').addEventListener('click', resetSimulation);
+            
+            // Initialize UI
+            updateSelectionUI();
+            resetSimulation();
+        }
+        
+        function switchTab(tabId) {
+            // Hide all tabs
+            document.querySelectorAll('.tab-content').forEach(tab => {
+                tab.classList.remove('active');
+            });
+            document.querySelectorAll('.tab').forEach(tab => {
+                tab.classList.remove('active');
+            });
+            
+            // Show selected tab
+            document.getElementById(tabId).classList.add('active');
+            document.querySelector(`.tab[onclick="switchTab('${tabId}')"]`).classList.add('active');
+        }
+        
+        function updateSelectionUI() {
+            const selectionType = params.selectionType;
+            document.getElementById('tournamentSizeGroup').style.display = 
+                selectionType === 'tournament' ? 'block' : 'none';
+            document.getElementById('truncationThresholdGroup').style.display = 
+                selectionType === 'truncation' ? 'block' : 'none';
+        }
+        
+        // Create initial population
+        function createPopulation() {
+            population = [];
+            for (let i = 0; i < params.populationSize; i++) {
+                population.push(createOrganism());
+            }
+        }
+        
+        // Create a single organism with random genes
+        function createOrganism() {
+            const genes = [];
+            for (let i = 0; i < params.geneComplexity; i++) {
+                genes.push(Math.random());
+            }
+            return { genes, fitness: 0 };
+        }
+        
+        // Calculate fitness for all organisms
+        function calculateFitness() {
+            // Calculate color based on genes (simple average for demonstration)
+            population.forEach(org => {
+                const color = [
+                    averageGeneValues(org.genes, 0),
+                    averageGeneValues(org.genes, 1),
+                    averageGeneValues(org.genes, 2)
+                ];
+                
+                // Fitness is inverse of distance to target color (higher is better)
+                const dr = color[0] - params.targetColor[0];
+                const dg = color[1] - params.targetColor[1];
+                const db = color[2] - params.targetColor[2];
+                const distance = Math.sqrt(dr*dr + dg*dg + db*db);
+                org.fitness = 1 - distance; // Normalized to 0-1 range
+                org.color = color;
+            });
+        }
+        
+        // Helper function to average gene values with modulo for RGB components
+        function averageGeneValues(genes, offset) {
+            let sum = 0;
+            let count = 0;
+            for (let i = offset; i < genes.length; i += 3) {
+                sum += genes[i];
+                count++;
+            }
+            return count > 0 ? sum / count : 0;
+        }
+        
+        // Perform selection and reproduction
+        function nextGeneration() {
+            // Calculate fitness if not already done
+            if (population[0].fitness === undefined) {
+                calculateFitness();
+            }
+            
+            // Sort by fitness (descending)
+            population.sort((a, b) => b.fitness - a.fitness);
+            
+            // Apply elitism (keep top individuals unchanged)
+            const eliteCount = Math.floor(params.populationSize * params.elitism);
+            const newPopulation = population.slice(0, eliteCount);
+            
+            // Fill the rest of the population
+            while (newPopulation.length < params.populationSize) {
+                let parent1, parent2;
+                
+                // Select parents based on selection method
+                switch (params.selectionType) {
+                    case 'truncation':
+                        parent1 = selectTruncation();
+                        parent2 = selectTruncation();
+                        break;
+                    case 'tournament':
+                        parent1 = selectTournament();
+                        parent2 = selectTournament();
+                        break;
+                    case 'fitnessProportionate':
+                        parent1 = selectFitnessProportionate();
+                        parent2 = selectFitnessProportionate();
+                        break;
+                    case 'rank':
+                        parent1 = selectRank();
+                        parent2 = selectRank();
+                        break;
+                    default:
+                        parent1 = population[0];
+                        parent2 = population[1];
+                }
+                
+                // Create offspring through crossover and mutation
+                const offspring = crossover(parent1, parent2);
+                mutate(offspring);
+                newPopulation.push(offspring);
+            }
+            
+            population = newPopulation;
+            generation++;
+            
+            // Apply environment change (gradually shift target color)
+            if (params.environmentChange > 0) {
+                params.targetColor = params.targetColor.map(c => {
+                    const change = (Math.random() * 2 - 1) * params.environmentChange;
+                    return Math.max(0, Math.min(1, c + change));
+                });
+                
+                // Update color picker to reflect change
+                const r = Math.round(params.targetColor[0] * 255).toString(16).padStart(2, '0');
+                const g = Math.round(params.targetColor[1] * 255).toString(16).padStart(2, '0');
+                const b = Math.round(params.targetColor[2] * 255).toString(16).padStart(2, '0');
+                document.getElementById('targetColor').value = `#${r}${g}${b}`;
+            }
+            
+            // Calculate fitness for new generation
+            calculateFitness();
+            
+            // Update statistics
+            updateStatistics();
+        }
+        
+        // Selection methods
+        function selectTruncation() {
+            const threshold = Math.floor(params.populationSize * params.truncationThreshold);
+            return population[Math.floor(Math.random() * threshold)];
+        }
+        
+        function selectTournament() {
+            let best = null;
+            for (let i = 0; i < params.tournamentSize; i++) {
+                const candidate = population[Math.floor(Math.random() * params.populationSize)];
+                if (!best || candidate.fitness > best.fitness) {
+                    best = candidate;
+                }
+            }
+            return best;
+        }
+        
+        function selectFitnessProportionate() {
+            // Calculate total fitness
+            const totalFitness = population.reduce((sum, org) => sum + org.fitness, 0);
+            
+            // Select random point
+            let point = Math.random() * totalFitness;
+            let sum = 0;
+            
+            for (const org of population) {
+                sum += org.fitness;
+                if (sum >= point) {
+                    return org;
+                }
+            }
+            
+            return population[0]; // fallback
+        }
+        
+        function selectRank() {
+            // Assign selection probability based on rank (not fitness)
+            const total = params.populationSize * (params.populationSize + 1) / 2;
+            let point = Math.random() * total;
+            let sum = 0;
+            
+            for (let i = 0; i < params.populationSize; i++) {
+                sum += (params.populationSize - i);
+                if (sum >= point) {
+                    return population[i];
+                }
+            }
+            
+            return population[0]; // fallback
+        }
+        
+        // Crossover two parents to create an offspring
+        function crossover(parent1, parent2) {
+            // Simple uniform crossover
+            const genes = [];
+            for (let i = 0; i < parent1.genes.length; i++) {
+                genes.push(Math.random() < 0.5 ? parent1.genes[i] : parent2.genes[i]);
+            }
+            return { genes, fitness: 0 };
+        }
+        
+        // Mutate an organism's genes
+        function mutate(organism) {
+            for (let i = 0; i < organism.genes.length; i++) {
+                if (Math.random() < params.mutationRate) {
+                    // Apply mutation with random effect
+                    const effect = (Math.random() * 2 - 1) * params.mutationEffect;
+                    organism.genes[i] = Math.max(0, Math.min(1, organism.genes[i] + effect));
+                }
+            }
+        }
+        
+        // Update statistics and charts
+        function updateStatistics() {
+            // Calculate stats
+            let bestFitness = 0;
+            let totalFitness = 0;
+            let diversity = 0;
+            
+            // Calculate gene differences for diversity
+            const geneSums = new Array(params.geneComplexity).fill(0);
+            const geneSquares = new Array(params.geneComplexity).fill(0);
+            
+            population.forEach(org => {
+                if (org.fitness > bestFitness) bestFitness = org.fitness;
+                totalFitness += org.fitness;
+                
+                org.genes.forEach((gene, i) => {
+                    geneSums[i] += gene;
+                    geneSquares[i] += gene * gene;
+                });
+            });
+            
+            const avgFitness = totalFitness / params.populationSize;
+            
+            // Calculate variance for diversity metric
+            for (let i = 0; i < params.geneComplexity; i++) {
+                const mean = geneSums[i] / params.populationSize;
+                const variance = (geneSquares[i] / params.populationSize) - (mean * mean);
+                diversity += variance;
+            }
+            diversity = diversity / params.geneComplexity; // Average variance across genes
+            
+            // Update history
+            fitnessHistory.push(bestFitness);
+            avgFitnessHistory.push(avgFitness);
+            diversityHistory.push(diversity);
+            bestOrganismHistory.push(population[0]);
+            
+            // Keep history within bounds
+            if (fitnessHistory.length > params.generations) {
+                fitnessHistory.shift();
+                avgFitnessHistory.shift();
+                diversityHistory.shift();
+                bestOrganismHistory.shift();
+            }
+            
+            // Update UI
+            document.getElementById('currentGeneration').textContent = generation;
+            document.getElementById('bestFitness').textContent = bestFitness.toFixed(3);
+            document.getElementById('avgFitness').textContent = avgFitness.toFixed(3);
+            document.getElementById('diversity').textContent = diversity.toFixed(5);
+            
+            // Update visualizations
+            drawPopulation();
+            drawFitnessChart();
+            drawGeneChart();
+        }
+        
+        // Draw the current population
+        function drawPopulation() {
+            populationCtx.clearRect(0, 0, populationCanvas.width, populationCanvas.height);
+            
+            const orgWidth = populationCanvas.width / params.populationSize;
+            const orgHeight = populationCanvas.height;
+            
+            population.forEach((org, i) => {
+                const x = i * orgWidth;
+                const [r, g, b] = org.color;
+                
+                populationCtx.fillStyle = `rgb(${Math.round(r * 255)}, ${Math.round(g * 255)}, ${Math.round(b * 255)})`;
+                populationCtx.fillRect(x, 0, orgWidth, orgHeight);
+                
+                // Draw fitness indicator
+                const fitnessHeight = orgHeight * org.fitness;
+                populationCtx.fillStyle = 'rgba(255, 255, 255, 0.5)';
+                populationCtx.fillRect(x, orgHeight - fitnessHeight, orgWidth, fitnessHeight);
+            });
+            
+            // Draw target color reference
+            const [tr, tg, tb] = params.targetColor;
+            populationCtx.fillStyle = `rgb(${Math.round(tr * 255)}, ${Math.round(tg * 255)}, ${Math.round(tb * 255)})`;
+            populationCtx.strokeStyle = 'white';
+            populationCtx.lineWidth = 2;
+            populationCtx.beginPath();
+            populationCtx.arc(20, 20, 15, 0, Math.PI * 2);
+            populationCtx.fill();
+            populationCtx.stroke();
+        }
+        
+        // Draw fitness chart
+        function drawFitnessChart() {
+            fitnessCtx.clearRect(0, 0, fitnessCanvas.width, fitnessCanvas.height);
+            
+            if (fitnessHistory.length < 2) return;
+            
+            const maxGen = Math.max(generation, params.generations);
+            const xScale = fitnessCanvas.width / maxGen;
+            const yScale = fitnessCanvas.height;
+            
+            // Draw best fitness line
+            fitnessCtx.beginPath();
+            fitnessCtx.moveTo(0, fitnessCanvas.height - fitnessHistory[0] * yScale);
+            
+            for (let i = 1; i < fitnessHistory.length; i++) {
+                const x = i * xScale;
+                const y = fitnessCanvas.height - fitnessHistory[i] * yScale;
+                fitnessCtx.lineTo(x, y);
+            }
+            
+            fitnessCtx.strokeStyle = '#e74c3c';
+            fitnessCtx.lineWidth = 2;
+            fitnessCtx.stroke();
+            
+            // Draw average fitness line
+            fitnessCtx.beginPath();
+            fitnessCtx.moveTo(0, fitnessCanvas.height - avgFitnessHistory[0] * yScale);
+            
+            for (let i = 1; i < avgFitnessHistory.length; i++) {
+                const x = i * xScale;
+                const y = fitnessCanvas.height - avgFitnessHistory[i] * yScale;
+                fitnessCtx.lineTo(x, y);
+            }
+            
+            fitnessCtx.strokeStyle = '#3498db';
+            fitnessCtx.lineWidth = 2;
+            fitnessCtx.stroke();
+            
+            // Draw legend
+            fitnessCtx.fillStyle = '#e74c3c';
+            fitnessCtx.fillText('Best Fitness', 10, 15);
+            fitnessCtx.fillStyle = '#3498db';
+            fitnessCtx.fillText('Avg Fitness', 10, 30);
+        }
+        
+        // Draw gene distribution chart
+        function drawGeneChart() {
+            geneCtx.clearRect(0, 0, geneCanvas.width, geneCanvas.height);
+            
+            if (population.length === 0) return;
+            
+            // Calculate gene distributions
+            const geneBins = new Array(params.geneComplexity);
+            for (let i = 0; i < params.geneComplexity; i++) {
+                geneBins[i] = new Array(10).fill(0); // 10 bins per gene
+            }
+            
+            population.forEach(org => {
+                org.genes.forEach((gene, geneIdx) => {
+                    const bin = Math.min(9, Math.floor(gene * 10));
+                    geneBins[geneIdx][bin]++;
+                });
+            });
+            
+            // Normalize bins
+            const maxBin = Math.max(...geneBins.flat());
+            if (maxBin === 0) return;
+            
+            // Draw gene distributions
+            const geneWidth = geneCanvas.width / params.geneComplexity;
+            const binWidth = geneWidth / 10;
+            
+            for (let geneIdx = 0; geneIdx < params.geneComplexity; geneIdx++) {
+                for (let bin = 0; bin < 10; bin++) {
+                    const height = (geneBins[geneIdx][bin] / maxBin) * geneCanvas.height;
+                    const x = geneIdx * geneWidth + bin * binWidth;
+                    const y = geneCanvas.height - height;
+                    
+                    geneCtx.fillStyle = `hsl(${geneIdx * 360 / params.geneComplexity}, 70%, 50%)`;
+                    geneCtx.fillRect(x, y, binWidth, height);
+                }
+                
+                // Draw gene label
+                geneCtx.fillStyle = 'black';
+                geneCtx.textAlign = 'center';
+                geneCtx.fillText(`G${geneIdx + 1}`, (geneIdx + 0.5) * geneWidth, geneCanvas.height - 5);
+            }
+        }
+        
+        // Simulation control functions
+        function startSimulation() {
+            if (!isRunning) {
+                isRunning = true;
+                document.getElementById('startButton').disabled = true;
+                document.getElementById('pauseButton').disabled = false;
+                document.getElementById('stepButton').disabled = true;
+                
+                // Run simulation loop
+                function run() {
+                    if (generation >= params.generations) {
+                        pauseSimulation();
+                        return;
+                    }
+                    
+                    nextGeneration();
+                    animationId = requestAnimationFrame(run);
+                }
+                
+                run();
+            }
+        }
+        
+        function pauseSimulation() {
+            if (isRunning) {
+                isRunning = false;
+                cancelAnimationFrame(animationId);
+                document.getElementById('startButton').disabled = false;
+                document.getElementById('pauseButton').disabled = true;
+                document.getElementById('stepButton').disabled = false;
+            }
+        }
+        
+        function stepSimulation() {
+            if (!isRunning && generation < params.generations) {
+                nextGeneration();
+            }
+        }
+        
+        function resetSimulation() {
+            pauseSimulation();
+            generation = 0;
+            fitnessHistory = [];
+            avgFitnessHistory = [];
+            diversityHistory = [];
+            bestOrganismHistory = [];
+            
+            createPopulation();
+            calculateFitness();
+            updateStatistics();
+            
+            document.getElementById('startButton').disabled = false;
+            document.getElementById('pauseButton').disabled = true;
+            document.getElementById('stepButton').disabled = false;
+        }
+        
+        // Initialize when page loads
+        window.onload = init;
+    </script>
+</body>
+</html>
